@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Prediction</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 2rem;
+            background-color: #f5f5f5;
+        }
+        .form-container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            margin-bottom: 2rem;
+        }
+        .prediction-container {
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        .prediction-positive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .prediction-negative {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .prediction-error {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .model-selector {
+            margin-bottom: 2rem;
+        }
+        h1 {
+            margin-bottom: 2rem;
+            color: #343a40;
+        }
+        label {
+            font-weight: 500;
+        }
+        .form-floating {
+            margin-bottom: 1rem;
+        }
+        .btn-primary {
+            background-color: #4e73df;
+            border-color: #4e73df;
+        }
+        .btn-primary:hover {
+            background-color: #2e59d9;
+            border-color: #2653d4;
+        }
+        .nav-link {
+            color: #4e73df;
+        }
+        .nav-link:hover {
+            color: #2e59d9;
+        }
+        .model-description {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #e9ecef;
+            border-radius: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1>Heart Disease Prediction</h1>
+                    <div>
+                        <span class="me-2">Welcome, {{ username }}!</span>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">Logout</a>
+                    </div>
+                </div>
+                
+                <!-- Model Selection -->
+                <div class="model-selector">
+                    <ul class="nav nav-tabs" id="modelTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {{ 'active' if model_type == 'ml' else '' }}" 
+                                    id="ml-tab" data-bs-toggle="tab" data-bs-target="#ml" 
+                                    type="button" role="tab" aria-controls="ml" aria-selected="{{ 'true' if model_type == 'ml' else 'false' }}">
+                                Classical ML
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {{ 'active' if model_type == 'dl' else '' }}" 
+                                    id="dl-tab" data-bs-toggle="tab" data-bs-target="#dl" 
+                                    type="button" role="tab" aria-controls="dl" aria-selected="{{ 'true' if model_type == 'dl' else 'false' }}">
+                                Deep Learning
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {{ 'active' if model_type == 'qml' else '' }}" 
+                                    id="qml-tab" data-bs-toggle="tab" data-bs-target="#qml" 
+                                    type="button" role="tab" aria-controls="qml" aria-selected="{{ 'true' if model_type == 'qml' else 'false' }}">
+                                Quantum ML
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Prediction Display -->
+                {% if prediction %}
+                <div class="prediction-container text-center {{ 'prediction-positive' if prediction == 'Positive' else 'prediction-negative' if prediction == 'Negative' else 'prediction-error' }}">
+                    <h2 class="mb-0">
+                        {% if prediction == 'Positive' %}
+                            Heart Disease: Positive
+                        {% elif prediction == 'Negative' %}
+                            Heart Disease: Negative
+                        {% elif 'not available' in prediction %}
+                            Heart Disease: {{ prediction }}
+                        {% else %}
+                            {{ prediction }}
+                        {% endif %}
+                    </h2>
+                </div>
+                {% endif %}
+                
+                <!-- Input Form -->
+                <div class="form-container">
+                    <div class="tab-content" id="modelTabsContent">
+                        <!-- ML Tab -->
+                        <div class="tab-pane fade {{ 'show active' if model_type == 'ml' else '' }}" id="ml" role="tabpanel" aria-labelledby="ml-tab">
+                            <form method="POST" action="{{ url_for('predict') }}">
+                                <input type="hidden" name="model_type" value="ml">
+                                
+                                <div class="row">
+                                    {% for feature in ml_dl_features %}
+                                    <div class="col-md-4">
+                                        <div class="form-floating mb-3">
+                                            <input type="number" step="any" class="form-control" id="{{ feature }}" name="{{ feature }}" placeholder="{{ feature }}" required>
+                                            <label for="{{ feature }}">{{ feature }}</label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">Predict with ML</button>
+                                
+                                <div class="model-description">
+                                    <h5>Random Forest Model</h5>
+                                    <p>This model uses a classical machine learning approach (Random Forest) to predict heart disease based on all 13 clinical features.</p>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- DL Tab -->
+                        <div class="tab-pane fade {{ 'show active' if model_type == 'dl' else '' }}" id="dl" role="tabpanel" aria-labelledby="dl-tab">
+                            <form method="POST" action="{{ url_for('predict') }}">
+                                <input type="hidden" name="model_type" value="dl">
+                                
+                                <div class="row">
+                                    {% for feature in ml_dl_features %}
+                                    <div class="col-md-4">
+                                        <div class="form-floating mb-3">
+                                            <input type="number" step="any" class="form-control" id="{{ feature }}_dl" name="{{ feature }}" placeholder="{{ feature }}" required>
+                                            <label for="{{ feature }}_dl">{{ feature }}</label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">Predict with Deep Learning</button>
+                                
+                                <div class="model-description">
+                                    <h5>Neural Network Model</h5>
+                                    <p>This model uses a deep neural network to predict heart disease based on all 13 clinical features.</p>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- QML Tab -->
+                        <div class="tab-pane fade {{ 'show active' if model_type == 'qml' else '' }}" id="qml" role="tabpanel" aria-labelledby="qml-tab">
+                            <form method="POST" action="{{ url_for('predict') }}">
+                                <input type="hidden" name="model_type" value="qml">
+                                
+                                <div class="row">
+                                    {% for feature in qml_features %}
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <input type="number" step="any" class="form-control" id="{{ feature }}_qml" name="{{ feature }}" placeholder="{{ feature }}" required>
+                                            <label for="{{ feature }}_qml">{{ feature }}</label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">Predict with Quantum ML</button>
+                                
+                                <div class="model-description">
+                                    <h5>Quantum Machine Learning Model</h5>
+                                    <p>This model uses quantum computing techniques with PennyLane to predict heart disease based on 4 key clinical features: Age, Resting Blood Pressure, Cholesterol, and Maximum Heart Rate.</p>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature Explanation -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Feature Explanation</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-3">age</dt>
+                            <dd class="col-sm-9">Age in years</dd>
+                            
+                            <dt class="col-sm-3">sex</dt>
+                            <dd class="col-sm-9">Sex (1 = male; 0 = female)</dd>
+                            
+                            <dt class="col-sm-3">cp</dt>
+                            <dd class="col-sm-9">Chest pain type (0-3)</dd>
+                            
+                            <dt class="col-sm-3">trestbps</dt>
+                            <dd class="col-sm-9">Resting blood pressure (in mm Hg)</dd>
+                            
+                            <dt class="col-sm-3">chol</dt>
+                            <dd class="col-sm-9">Serum cholesterol in mg/dl</dd>
+                            
+                            <dt class="col-sm-3">fbs</dt>
+                            <dd class="col-sm-9">Fasting blood sugar > 120 mg/dl (1 = true; 0 = false)</dd>
+                            
+                            <dt class="col-sm-3">restecg</dt>
+                            <dd class="col-sm-9">Resting electrocardiographic results (0-2)</dd>
+                            
+                            <dt class="col-sm-3">thalach</dt>
+                            <dd class="col-sm-9">Maximum heart rate achieved</dd>
+                            
+                            <dt class="col-sm-3">exang</dt>
+                            <dd class="col-sm-9">Exercise induced angina (1 = yes; 0 = no)</dd>
+                            
+                            <dt class="col-sm-3">oldpeak</dt>
+                            <dd class="col-sm-9">ST depression induced by exercise relative to rest</dd>
+                            
+                            <dt class="col-sm-3">slope</dt>
+                            <dd class="col-sm-9">The slope of the peak exercise ST segment (0-2)</dd>
+                            
+                            <dt class="col-sm-3">ca</dt>
+                            <dd class="col-sm-9">Number of major vessels (0-3) colored by fluoroscopy</dd>
+                            
+                            <dt class="col-sm-3">thal</dt>
+                            <dd class="col-sm-9">Thalassemia (0 = normal; 1 = fixed defect; 2 = reversible defect)</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize the tabs
+        document.addEventListener('DOMContentLoaded', function() {
+            const triggerTabList = [].slice.call(document.querySelectorAll('#modelTabs button'));
+            triggerTabList.forEach(function(triggerEl) {
+                triggerEl.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    
+                    // Get the form from the tab pane this tab controls
+                    const tabPane = document.querySelector(this.getAttribute('data-bs-target'));
+                    const form = tabPane.querySelector('form');
+                    
+                    // Update the model_type hidden input in all forms
+                    const modelType = this.getAttribute('data-bs-target').replace('#', '');
+                    document.querySelectorAll('input[name="model_type"]').forEach(input => {
+                        input.value = modelType;
+                    });
+                    
+                    // Show the active tab
+                    triggerEl.classList.add('active');
+                    triggerTabList.forEach(t => {
+                        if (t !== triggerEl) t.classList.remove('active');
+                    });
+                    
+                    document.querySelectorAll('.tab-pane').forEach(pane => {
+                        pane.classList.remove('show', 'active');
+                    });
+                    tabPane.classList.add('show', 'active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
