@@ -23,6 +23,20 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install pandas numpy scikit-learn matplotlib seaborn
+
+    - name: Install ipykernel
+      run: |
+        pip install ipykernel
+
+    - name: Install Jupyter and create a kernel
+      run: |
+        pip install jupyter
+        python -m ipykernel install --user --name=python3 --display-name "Python 3"
+
+    - name: Check installed Python kernels
+      run: |
+        jupyter kernelspec list
 
     - name: Install ipykernel
       run: |
